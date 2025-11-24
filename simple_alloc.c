@@ -1,4 +1,4 @@
-#include "alloc.h"
+#include "simple_alloc.h"
 #include <unistd.h>
 
 #define METADATA_SIZE 20
@@ -91,7 +91,7 @@ static void copy_block_data(block_ptr src, block_ptr dest) {
   }
 }
 
-void* custom_malloc(size_t size) {
+void* simple_malloc(size_t size) {
   block_ptr block, last;
   size_t aligned_size = ALIGN_4(size);
 
@@ -119,7 +119,7 @@ void* custom_malloc(size_t size) {
   return block->memory;
 }
 
-void custom_free(void* ptr) {
+void simple_free(void* ptr) {
   if (is_valid_address(ptr)) {
     block_ptr block = get_block_from_ptr(ptr);
     block->is_free = 1;
@@ -139,13 +139,13 @@ void custom_free(void* ptr) {
   }
 }
 
-void* custom_realloc(void* ptr, size_t size) {
+void* simple_realloc(void* ptr, size_t size) {
   size_t aligned_size;
   block_ptr block, new_block;
   void* new_ptr;
 
   if (!ptr) {
-    return custom_malloc(size);
+    return simple_malloc(size);
   }
 
   if (is_valid_address(ptr)) {
@@ -165,13 +165,13 @@ void* custom_realloc(void* ptr, size_t size) {
           split_block(block, aligned_size);
         }
       } else {
-        new_ptr = custom_malloc(aligned_size);
+        new_ptr = simple_malloc(aligned_size);
         if (!new_ptr) {
           return NULL;
         }
         new_block = get_block_from_ptr(new_ptr);
         copy_block_data(block, new_block);
-        custom_free(ptr);
+        simple_free(ptr);
         return new_ptr;
       }
     }
@@ -180,9 +180,9 @@ void* custom_realloc(void* ptr, size_t size) {
   return NULL;
 }
 
-void* custom_calloc(size_t num, size_t size) {
+void* simple_calloc(size_t num, size_t size) {
   size_t total_size = num * size;
-  void* ptr = custom_malloc(total_size);
+  void* ptr = simple_malloc(total_size);
 
   if (ptr) {
     size_t aligned_size = ALIGN_4(total_size);
