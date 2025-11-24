@@ -5,6 +5,8 @@
 
 template <class T>
 using test_vector = std::vector<T, SimpleAllocator<T>>;
+using test_string =
+  std::basic_string<char, std::char_traits<char>, SimpleAllocator<char>>;
 
 int main() {
   test_vector<int> v;
@@ -37,7 +39,7 @@ int main() {
     std::cout << " " << x;
   std::cout << "\n";
 
-  test_vector<std::pair<int, std::string>> o;
+  test_vector<std::pair<int, test_string>> o;
   o.emplace_back(10, "hello");
   o.emplace_back(20, "world");
 
