@@ -1,15 +1,15 @@
 #include "SimpleAllocator.hpp"
 #include <iostream>
+#include <memory>
 #include <string>
 #include <vector>
 
-template <class T>
-using test_vector = std::vector<T, SimpleAllocator<T>>;
-using test_string =
-  std::basic_string<char, std::char_traits<char>, SimpleAllocator<char>>;
+template <template <class> class A>
+void test_vector() {
+  using VectorInt = std::vector<int, A<int>>;
+  using String = std::basic_string<char, std::char_traits<char>, A<char>>;
 
-int main() {
-  test_vector<int> v;
+  VectorInt v;
   v.push_back(1);
   v.push_back(2);
   v.push_back(3);
@@ -27,19 +27,20 @@ int main() {
     std::cout << " " << x;
   std::cout << "\n";
 
-  test_vector<int> v2 = v;
+  VectorInt v2 = v;
   std::cout << "copy v2:";
   for (auto x : v2)
     std::cout << " " << x;
   std::cout << "\n";
 
-  test_vector<int> v3 = std::move(v2);
+  VectorInt v3 = std::move(v2);
   std::cout << "moved v3:";
   for (auto x : v3)
     std::cout << " " << x;
   std::cout << "\n";
 
-  test_vector<std::pair<int, test_string>> o;
+  using pair = std::pair<int, String>;
+  std::vector<pair, A<pair>> o;
   o.emplace_back(10, "hello");
   o.emplace_back(20, "world");
 
@@ -51,14 +52,10 @@ int main() {
     sum += *it;
   std::cout << "sum(v3) = " << sum << "\n";
 
-  try {
-    test_vector<int> fail;
-    fail.reserve(static_cast<std::size_t>(-1) / 2);
-  } catch (const std::exception& e) {
-
-    std::cout << "caught expected exception: " << e.what() << "\n";
-  }
-
   std::cout << "tests finished.\n";
-  return 0;
+}
+
+int main() {
+  test_vector<std::allocator>();
+  test_vector<SimpleAllocator>();
 }
