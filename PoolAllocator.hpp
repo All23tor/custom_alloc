@@ -33,9 +33,9 @@ struct PoolAllocator {
       return result;
     } else {
       if (currentSlot >= lastSlot) {
-        char* newBlock = reinterpret_cast<char*>(operator new(BlockSize));
-        reinterpret_cast<Slot*>(newBlock)->next = currentBlock;
-        currentBlock = reinterpret_cast<Slot*>(newBlock);
+        auto newBlock = reinterpret_cast<Slot*>(operator new(BlockSize));
+        newBlock->next = currentBlock;
+        currentBlock = newBlock;
 
         char* body = newBlock + sizeof(Slot*);
         std::size_t bodyPadding = padPointer(body, alignof(Slot));
