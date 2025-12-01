@@ -1,61 +1,64 @@
+#include "PoolAllocator.hpp"
 #include "SimpleAllocator.hpp"
 #include <iostream>
 #include <memory>
-#include <string>
-#include <vector>
+#include <set>
 
 template <template <class> class A>
-void test_vector() {
-  using VectorInt = std::vector<int, A<int>>;
-  using String = std::basic_string<char, std::char_traits<char>, A<char>>;
+void test_set() {
+  using SetInt = std::set<int, std::less<int>, A<int>>;
 
-  VectorInt v;
-  v.push_back(1);
-  v.push_back(2);
-  v.push_back(3);
+  SetInt s;
 
-  std::cout << "v =";
-  for (auto x : v)
+  s.insert(5);
+  s.insert(1);
+  s.insert(3);
+  s.insert(3); // duplicate, ignored
+  s.insert(9);
+
+  std::cout << "set contents:";
+  for (auto x : s)
     std::cout << " " << x;
   std::cout << "\n";
 
-  v.reserve(10);
-  v.resize(6, 42);
+  // Check find
+  auto it = s.find(3);
+  if (it != s.end())
+    std::cout << "found 3\n";
+  else
+    std::cout << "did not find 3\n";
 
-  std::cout << "after resize:";
-  for (auto x : v)
+  it = s.find(42);
+  if (it != s.end())
+    std::cout << "found 42?!\n";
+  else
+    std::cout << "42 not found\n";
+
+  // Copy test
+  SetInt s2 = s;
+  std::cout << "copy s2:";
+  for (auto x : s2)
     std::cout << " " << x;
   std::cout << "\n";
 
-  VectorInt v2 = v;
-  std::cout << "copy v2:";
-  for (auto x : v2)
+  // Move test
+  SetInt s3 = std::move(s2);
+  std::cout << "moved s3:";
+  for (auto x : s3)
     std::cout << " " << x;
   std::cout << "\n";
 
-  VectorInt v3 = std::move(v2);
-  std::cout << "moved v3:";
-  for (auto x : v3)
+  // Erase test
+  s3.erase(3);
+  std::cout << "after erase(3):";
+  for (auto x : s3)
     std::cout << " " << x;
   std::cout << "\n";
 
-  using pair = std::pair<int, String>;
-  std::vector<pair, A<pair>> o;
-  o.emplace_back(10, "hello");
-  o.emplace_back(20, "world");
-
-  for (const auto& [i, s] : o)
-    std::cout << "{ " << i << ", " << s << " }\n";
-
-  int sum = 0;
-  for (auto it = v3.begin(); it != v3.end(); ++it)
-    sum += *it;
-  std::cout << "sum(v3) = " << sum << "\n";
-
-  std::cout << "tests finished.\n";
+  std::cout << "set tests finished.\n";
 }
 
 int main() {
-  test_vector<std::allocator>();
-  test_vector<SimpleAllocator>();
+  test_set<std::allocator>();
+  test_set<SimpleAllocator>();
 }
