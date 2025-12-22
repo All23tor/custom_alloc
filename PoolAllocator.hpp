@@ -37,11 +37,10 @@ struct PoolAllocator {
         newBlock->next = currentBlock;
         currentBlock = newBlock;
 
-        char* body = newBlock + sizeof(Slot*);
+        char* body = (char*)(newBlock + sizeof(Slot*));
         std::size_t bodyPadding = padPointer(body, alignof(Slot));
         currentSlot = reinterpret_cast<Slot*>(body + bodyPadding);
-        lastSlot =
-          reinterpret_cast<Slot*>(newBlock + BlockSize - sizeof(Slot) + 1);
+        lastSlot = reinterpret_cast<Slot*>((char*)newBlock + BlockSize - sizeof(Slot));
       }
       return reinterpret_cast<T*>(currentSlot++);
     }
