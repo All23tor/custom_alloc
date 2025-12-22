@@ -6,21 +6,21 @@
 // --- GESTOR DE MEMORIA COMPARTIDO ---
 // Sacamos esto fuera del template para que sea común a todos los tipos de
 // datos. (int, nodos de lista, vectores, etc. compartirán esta única arena).
-struct LinearArena {
-  static inline char* start = nullptr;
-  static inline char* end = nullptr;
-  static inline char* current = nullptr;
+namespace LinearArena {
+inline char* start = nullptr;
+inline char* end = nullptr;
+inline char* current = nullptr;
 
-  static void init(std::size_t size_bytes) {
-    delete[] LinearArena::start;
-    LinearArena::start = new char[size_bytes];
-    LinearArena::end = LinearArena::start + size_bytes;
-    LinearArena::current = LinearArena::start;
-  }
-  static void reset() {
-    LinearArena::current = LinearArena::start;
-  }
-};
+static void init(std::size_t size_bytes) {
+  delete[] start;
+  start = new char[size_bytes];
+  end = start + size_bytes;
+  current = start;
+}
+static void reset() {
+  current = start;
+}
+}; // namespace LinearArena
 
 template <typename T>
 struct LinearAllocator {
