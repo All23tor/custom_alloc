@@ -3,9 +3,6 @@
 
 #include <new>
 
-// --- GESTOR DE MEMORIA COMPARTIDO ---
-// Sacamos esto fuera del template para que sea común a todos los tipos de
-// datos. (int, nodos de lista, vectores, etc. compartirán esta única arena).
 namespace LinearArena {
 inline char* start = nullptr;
 inline char* end = nullptr;
@@ -49,9 +46,7 @@ struct LinearAllocator {
     return user_ptr;
   }
 
-  void deallocate(T*, std::size_t) noexcept {
-    // No hace nada. Se libera todo con LinearArena::reset().
-  }
+  void deallocate(T*, std::size_t) noexcept {}
 };
 
 #endif
