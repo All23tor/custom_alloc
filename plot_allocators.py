@@ -39,21 +39,21 @@ def plot_metric(metric, title, ylabel, filename):
 # ---- GENERATE PLOTS ---------------------------------------------------
 
 plot_metric(
-    metric="alloc_ms",
+    metric="alloc_ms_avg",
     title="Allocation Time",
     ylabel="Time (ms)",
     filename="alloc_time",
 )
 
 plot_metric(
-    metric="free_ms",
+    metric="free_ms_avg",
     title="Free Time",
     ylabel="Time (ms)",
     filename="free_time",
 )
 
 plot_metric(
-    metric="ram_kb",
+    metric="ram_kb_avg",
     title="Memory Usage",
     ylabel="RAM (KB)",
     filename="ram_usage",
