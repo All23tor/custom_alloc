@@ -3,12 +3,13 @@
 #include <list>
 #include <memory>
 #include <string_view>
-#include <unistd.h> // Para sysconf
+#include <unistd.h>
 #include <utility>
 #include <vector>
 
 #include "LinearAllocator.hpp"
 #include "PoolAllocator.hpp"
+#include "SegregatedAllocator.hpp"
 #include "SimpleAllocator.hpp"
 
 // --- UTILIDADES ---
@@ -25,28 +26,6 @@ size_t obtener_uso_memoria_kb() {
   }
   fclose(f);
   return (size_t)rss * (size_t)sysconf(_SC_PAGESIZE) / 1024;
-}
-
-// --- PRUEBAS VISUALES ---
-
-void prueba_visual_linear() {
-  std::cout << "\n=== 0. PRUEBA VISUAL: LINEAR ALLOCATOR ===\n";
-  std::cout << "(Demostracion de contiguidad de memoria)\n";
-
-  LinearAllocator<int> alloc;
-
-  int* p1 = alloc.allocate(1);
-  *p1 = 10;
-  int* p2 = alloc.allocate(1);
-  *p2 = 20;
-
-  long diff = (char*)p2 - (char*)p1;
-  std::cout << "Dir P1: " << p1 << " | Valor: " << *p1 << "\n";
-  std::cout << "Dir P2: " << p2 << " | Valor: " << *p2 << "\n";
-  std::cout << "Diferencia: " << diff << " bytes "
-            << ((diff == sizeof(int)) ? "(CORRECTO - Contiguo)" : "(RARO)")
-            << "\n";
-  std::cout << "==========================================\n";
 }
 
 // --- PRUEBAS DE METRICAS ---
@@ -163,22 +142,18 @@ void test(Args&&... args) {
   Test<SimpleAllocator>{}("Simple", std::forward<Args>(args)...);
   Test<PoolAllocator>{}("Pool", std::forward<Args>(args)...);
   Test<LinearAllocator>{}("Linear", std::forward<Args>(args)...);
+  Test<SegregatedAllocator>{}("Segregated", std::forward<Args>(args)...);
 }
 
-static constexpr int ELEMENTOS = 50000;
 int main() {
   // Linear Init (Necesita arena grande para std::list overhead)
   LinearArena::init(1024 * 1024 * 100);
 
-  // 0. VERIFICACIÓN
-  prueba_visual_linear();
-  // FASE 1: COMPARATIVA ESTÁNDAR (Lo que ira en tu tabla principal)
+  static constexpr int ELEMENTOS = 50000;
   std::cout << "\n=== 1. COMPARATIVA ESTANDAR (std::list) ===\n";
   test<MedirMetricasEstandar>(ELEMENTOS);
-  // FASE 2: VELOCIDAD PURA (Para explicar por qué Free parece igual)
   std::cout << "\n=== 2. VELOCIDAD PURA (Sin overhead de lista) ===\n";
   test<PruebaVelocidadPura>(ELEMENTOS);
-  // FASE 3: ESTRÉS (Para mostrar la debilidad del Linear)
   std::cout << "\n=== 3. TEST DE ESTRES (Fugas de memoria) ===\n";
   test<PrubaEstresMemoria>();
 }
