@@ -12,9 +12,6 @@
 #include "SegregatedAllocator.hpp"
 #include "SimpleAllocator.hpp"
 
-// --- UTILIDADES ---
-
-// Lee la RAM real usada por el proceso (Resident Set Size)
 size_t obtener_uso_memoria_kb() {
   long rss = 0;
   FILE* f = fopen("/proc/self/statm", "r");
@@ -28,9 +25,6 @@ size_t obtener_uso_memoria_kb() {
   return (size_t)rss * (size_t)sysconf(_SC_PAGESIZE) / 1024;
 }
 
-// --- PRUEBAS DE METRICAS ---
-
-// 1. COMPARATIVA ESTÁNDAR (Con std::list)
 template <template <class> class AllocatorType>
 struct MedirMetricasEstandar {
   void operator()(std::string_view nombre, int num_elementos) const {
@@ -42,10 +36,9 @@ struct MedirMetricasEstandar {
     double tiempo_free = 0;
     size_t ram_usada = 0;
 
-    { // SCOPE: Al salir de aquí, se llama a deallocate/destructores
+    {
       std::list<int, AllocatorType<int>> lista;
 
-      // MEDIR ALLOC
       start = std::chrono::high_resolution_clock::now();
       for (int i = 0; i < num_elementos; ++i) {
         lista.push_back(i);
@@ -54,11 +47,9 @@ struct MedirMetricasEstandar {
       tiempo_alloc =
         std::chrono::duration<double, std::milli>(end - start).count();
 
-      // MEDIR RAM
       size_t ram_pico = obtener_uso_memoria_kb();
       ram_usada = (ram_pico > ram_base) ? (ram_pico - ram_base) : 0;
 
-      // MEDIR FREE
       start = std::chrono::high_resolution_clock::now();
       lista.clear();
       end = std::chrono::high_resolution_clock::now();
@@ -75,7 +66,6 @@ struct MedirMetricasEstandar {
   }
 };
 
-// 2. VELOCIDAD PURA (Sin std::list)
 template <template <class> class AllocatorType>
 struct PruebaVelocidadPura {
   void operator()(std::string_view nombre, int n) const {
@@ -83,7 +73,6 @@ struct PruebaVelocidadPura {
     punteros.reserve(n);
     AllocatorType<int> alloc;
 
-    // Alloc Puro
     auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < n; ++i) {
       punteros.push_back(alloc.allocate(1));
@@ -92,7 +81,6 @@ struct PruebaVelocidadPura {
     double t_alloc =
       std::chrono::duration<double, std::milli>(end - start).count();
 
-    // Free Puro
     start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < n; ++i) {
       alloc.deallocate(punteros[i], 1);
@@ -109,23 +97,20 @@ struct PruebaVelocidadPura {
   }
 };
 
-// 3. ESTRÉS DE MEMORIA (Diente de Sierra)
 template <template <class> class AllocatorType>
 struct PrubaEstresMemoria {
   void operator()(std::string_view nombre) const {
     std::cout << ">>> Probando: " << nombre << " <<<\n";
     size_t ram_inicial = obtener_uso_memoria_kb();
 
-    // 5 Ciclos de Alloc/Free
     for (int i = 1; i <= 5; ++i) {
       {
         std::list<int, AllocatorType<int>> lista;
-        for (int j = 0; j < 50000; ++j) { // 50k elementos
+        for (int j = 0; j < 50000; ++j) {
           lista.push_back(j);
         }
-      } // Aquí se libera
+      }
 
-      // Medimos si la RAM bajó o se quedó ocupada
       size_t ram_actual = obtener_uso_memoria_kb();
       long diferencia = (long)ram_actual - (long)ram_inicial;
       std::cout << "  Ciclo " << i << " | RAM Acumulada: " << diferencia
@@ -146,7 +131,6 @@ void test(Args&&... args) {
 }
 
 int main() {
-  // Linear Init (Necesita arena grande para std::list overhead)
   LinearArena::init(1024 * 1024 * 100);
 
   static constexpr int ELEMENTOS = 50000;
