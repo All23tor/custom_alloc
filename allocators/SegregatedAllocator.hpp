@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <array>
 #include <bit>
+#include <cstring>
 #include <memory>
 #include <new>
 #include <utility>
@@ -32,6 +33,7 @@ struct Slab {
 
   Slab(std::size_t block_size) {
     memory = std::make_unique<char[]>(SLAB_SIZE);
+    std::memset(memory.get(), 0, SLAB_SIZE);
     free_list = nullptr;
 
     for (std::size_t block = 0; block < SLAB_SIZE; block += block_size) {
@@ -64,12 +66,10 @@ struct Slab {
 };
 
 namespace SegregatedLists {
-inline std::array<std::vector<Slab>, sfl::SIZE_CLASSES> slabs = [] {
-  std::array<std::vector<Slab>, sfl::SIZE_CLASSES> slabs;
-  for (std::size_t i = 0; i < sfl::SIZE_CLASSES; ++i)
-    slabs[i].emplace_back(1uz << (i + sfl::SIZE_START));
-  return slabs;
-}();
+inline std::array<std::vector<Slab>, sfl::SIZE_CLASSES> slabs;
+inline void reset() {
+  std::ranges::for_each(slabs, &std::vector<Slab>::clear);
+}
 }; // namespace SegregatedLists
 
 template <typename T>

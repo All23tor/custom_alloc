@@ -35,6 +35,9 @@ struct LinearAllocator {
   };
 
   T* allocate(std::size_t n) {
+    if (LinearArena::start == nullptr)
+      LinearArena::init(1024 * 1024 * 100);
+
     std::size_t bytes_needed = n * sizeof(T);
 
     if (LinearArena::end - LinearArena::current < bytes_needed)
