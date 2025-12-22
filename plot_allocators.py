@@ -29,6 +29,7 @@ def plot_metric(metric, title, ylabel, filename):
         plt.title(f"{title} ({t})")
         plt.xlabel("Number of elements (n)")
         plt.ylabel(ylabel)
+        plt.yscale("log", base=1.5)
         plt.legend()
         plt.grid(True)
         plt.tight_layout()

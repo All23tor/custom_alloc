@@ -3,6 +3,7 @@
 #include "SegregatedAllocator.hpp"
 #include "SimpleAllocator.hpp"
 #include <chrono>
+#include <cstdint>
 #include <iostream>
 #include <list>
 
@@ -38,7 +39,6 @@ size_t obtener_uso_memoria_kb() {
   size_t rss_kb = 0;
 
   while (fgets(line, sizeof(line), f)) {
-    // Lines look like: "Rss:        132 kB"
     if (std::strncmp(line, "Rss:", 4) == 0) {
       char* end;
       size_t value = std::strtoul(line + 4, &end, 10);
@@ -80,6 +80,42 @@ void test_list_size_type_csv(std::string_view alloc_name, std::size_t n) {
 }
 
 template <template <class> class AllocatorType>
+void test_list_size_mixed_csv(std::string_view alloc_name, std::size_t n) {
+  size_t ram_base = obtener_uso_memoria_kb();
+
+  std::list<int32_t, AllocatorType<int32_t>> lista32;
+  std::list<int64_t, AllocatorType<int64_t>> lista64;
+  std::list<__int128_t, AllocatorType<__int128_t>> lista128;
+
+  auto start_alloc = std::chrono::high_resolution_clock::now();
+  for (std::size_t i = 0; i < n; ++i) {
+    lista32.emplace_back(i) = 0;
+    lista64.emplace_back(i) = 0;
+    lista128.emplace_back(i) = 0;
+  }
+  auto end_alloc = std::chrono::high_resolution_clock::now();
+
+  double alloc_ms =
+    std::chrono::duration<double, std::milli>(end_alloc - start_alloc).count();
+
+  size_t ram_peak = obtener_uso_memoria_kb();
+
+  auto start_free = std::chrono::high_resolution_clock::now();
+  lista32.clear();
+  lista64.clear();
+  lista128.clear();
+  auto end_free = std::chrono::high_resolution_clock::now();
+
+  double free_ms =
+    std::chrono::duration<double, std::milli>(end_free - start_free).count();
+
+  size_t ram_used = (ram_peak > ram_base) ? (ram_peak - ram_base) : 0;
+
+  std::cout << alloc_name << ',' << "mixed" << ',' << n << ',' << alloc_ms
+            << ',' << free_ms << ',' << ram_used << '\n';
+}
+
+template <template <class> class AllocatorType>
 void run_type_test(
   std::string_view alloc_name, std::string_view type, std::size_t n
 ) {
@@ -93,6 +129,8 @@ void run_type_test(
     test_list_size_type_csv<AllocatorType, int64_t>(alloc_name, n);
   else if (type == "i128")
     test_list_size_type_csv<AllocatorType, __int128>(alloc_name, n);
+  else if (type == "mixed")
+    test_list_size_mixed_csv<AllocatorType>(alloc_name, n);
   else {
     std::cerr << "Unknown type: " << type << '\n';
     std::exit(1);
@@ -104,7 +142,7 @@ int main(int argc, char** argv) {
     std::cerr << "Usage:\n"
               << "  " << argv[0] << " <Allocator> <Type> <N>\n\n"
               << "Allocators: Standard | Simple | Pool | Linear | Segregated\n"
-              << "Types: i8 | i16 | i32 | i64 | i128\n";
+              << "Types: i8 | i16 | i32 | i64 | i128 | mixed\n";
     return 1;
   }
 

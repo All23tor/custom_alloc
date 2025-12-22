@@ -19,7 +19,7 @@ ALLOCATORS = [
     "Segregated",
 ]
 
-TYPES = ["i8", "i16", "i32", "i64", "i128"]
+TYPES = ["i8", "i16", "i32", "i64", "i128", "mixed"]
 
 SIZES = [1_000, 5_000, 10_000, 50_000, 100_000]
 
