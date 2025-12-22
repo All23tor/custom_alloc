@@ -1,69 +1,57 @@
 #ifndef LINEAR_ALLOCATOR_HPP
 #define LINEAR_ALLOCATOR_HPP
 
-#include <cstddef>
-#include <cstdlib>
-#include <stdexcept>
-#include <iostream>
+#include <new>
 
 // --- GESTOR DE MEMORIA COMPARTIDO ---
-// Sacamos esto fuera del template para que sea común a todos los tipos de datos.
-// (int, nodos de lista, vectores, etc. compartirán esta única arena).
+// Sacamos esto fuera del template para que sea común a todos los tipos de
+// datos. (int, nodos de lista, vectores, etc. compartirán esta única arena).
 struct LinearArena {
-    static inline char* start = nullptr;
-    static inline char* end = nullptr;
-    static inline char* current = nullptr;
+  static inline char* start = nullptr;
+  static inline char* end = nullptr;
+  static inline char* current = nullptr;
+
+  static void init(std::size_t size_bytes) {
+    if (LinearArena::start)
+      delete[] LinearArena::start;
+
+    LinearArena::start = new char[size_bytes];
+    LinearArena::end = LinearArena::start + size_bytes;
+    LinearArena::current = LinearArena::start;
+  }
 };
 
 template <typename T>
 struct LinearAllocator {
-    using value_type = T;
+  using value_type = T;
 
-    LinearAllocator() noexcept {}
-    template <typename U> LinearAllocator(const LinearAllocator<U>&) noexcept {}
-    template <typename U> struct rebind { using other = LinearAllocator<U>; };
+  LinearAllocator() noexcept {}
+  template <typename U>
+  LinearAllocator(const LinearAllocator<U>&) noexcept {}
+  template <typename U>
+  struct rebind {
+    using other = LinearAllocator<U>;
+  };
 
-    // --- INICIALIZACIÓN (Llamar una vez en main) ---
-    static void init(std::size_t size_bytes) {
-        if (LinearArena::start) {
-            std::free(LinearArena::start);
-        }
-        
-        // Pedimos la memoria al sistema operativo
-        LinearArena::start = static_cast<char*>(std::malloc(size_bytes));
-        if (!LinearArena::start) throw std::bad_alloc();
+  static void reset() {
+    LinearArena::current = LinearArena::start;
+  }
 
-        LinearArena::end = LinearArena::start + size_bytes;
-        LinearArena::current = LinearArena::start;
-        
-        // Opcional: Imprimir para confirmar
-        // std::cout << "[LinearArena] Reservados " << size_bytes / 1024 << " KB\n";
-    }
+  T* allocate(std::size_t n) {
+    std::size_t bytes_needed = n * sizeof(T);
 
-    // --- RESET ---
-    static void reset() {
-        LinearArena::current = LinearArena::start;
-    }
+    if (LinearArena::end - LinearArena::current < bytes_needed)
+      throw std::bad_alloc();
 
-    // --- ASIGNACIÓN ---
-    T* allocate(std::size_t n) {
-        std::size_t bytes_needed = n * sizeof(T);
-        
-        // Verificar si cabe en la Arena compartida
-        if (LinearArena::current + bytes_needed > LinearArena::end) {
-            throw std::bad_alloc();
-        }
+    auto user_ptr = reinterpret_cast<T*>(LinearArena::current);
+    LinearArena::current += bytes_needed;
 
-        char* user_ptr = LinearArena::current;
-        LinearArena::current += bytes_needed; // Avanzamos el puntero global
-        
-        return reinterpret_cast<T*>(user_ptr);
-    }
+    return user_ptr;
+  }
 
-    // --- LIBERACIÓN ---
-    void deallocate(T*, std::size_t) noexcept {
-        // No hace nada. Se libera todo con reset().
-    }
+  void deallocate(T*, std::size_t) noexcept {
+    // No hace nada. Se libera todo con reset().
+  }
 };
 
 #endif
