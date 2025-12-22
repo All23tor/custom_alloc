@@ -12,11 +12,12 @@ struct LinearArena {
   static inline char* current = nullptr;
 
   static void init(std::size_t size_bytes) {
-    if (LinearArena::start)
-      delete[] LinearArena::start;
-
+    delete[] LinearArena::start;
     LinearArena::start = new char[size_bytes];
     LinearArena::end = LinearArena::start + size_bytes;
+    LinearArena::current = LinearArena::start;
+  }
+  static void reset() {
     LinearArena::current = LinearArena::start;
   }
 };
@@ -33,10 +34,6 @@ struct LinearAllocator {
     using other = LinearAllocator<U>;
   };
 
-  static void reset() {
-    LinearArena::current = LinearArena::start;
-  }
-
   T* allocate(std::size_t n) {
     std::size_t bytes_needed = n * sizeof(T);
 
@@ -50,7 +47,7 @@ struct LinearAllocator {
   }
 
   void deallocate(T*, std::size_t) noexcept {
-    // No hace nada. Se libera todo con reset().
+    // No hace nada. Se libera todo con LinearArena::reset().
   }
 };
 
